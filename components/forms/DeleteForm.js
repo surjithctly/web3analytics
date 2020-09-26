@@ -8,12 +8,19 @@ import FormLayout, {
   FormMessage,
   FormRow,
 } from 'components/layout/FormLayout';
+import { FormattedMessage } from 'react-intl';
+
+const CONFIRMATION_WORD = 'DELETE';
 
 const validate = ({ confirmation }) => {
   const errors = {};
 
-  if (confirmation !== 'DELETE') {
-    errors.confirmation = !confirmation ? 'Required' : 'Invalid';
+  if (confirmation !== CONFIRMATION_WORD) {
+    errors.confirmation = !confirmation ? (
+      <FormattedMessage id="label.required" defaultMessage="Required" />
+    ) : (
+      <FormattedMessage id="label.invalid" defaultMessage="Invalid" />
+    );
   }
 
   return errors;
@@ -28,7 +35,7 @@ export default function DeleteForm({ values, onSave, onClose }) {
     if (typeof response !== 'string') {
       onSave();
     } else {
-      setMessage('Something went wrong');
+      setMessage(<FormattedMessage id="message.failure" defaultMessage="Something went wrong." />);
     }
   };
 
@@ -39,24 +46,43 @@ export default function DeleteForm({ values, onSave, onClose }) {
         validate={validate}
         onSubmit={handleSubmit}
       >
-        {() => (
+        {props => (
           <Form>
             <div>
-              Are your sure you want to delete <b>{values.name}</b>?
+              <FormattedMessage
+                id="message.confirm-delete"
+                defaultMessage="Are your sure you want to delete {target}?"
+                values={{ target: <b>{values.name}</b> }}
+              />
             </div>
-            <div>All associated data will be deleted as well.</div>
+            <div>
+              <FormattedMessage
+                id="message.delete-warning"
+                defaultMessage="All associated data will be deleted as well."
+              />
+            </div>
             <p>
-              Type <b>DELETE</b> in the box below to confirm.
+              <FormattedMessage
+                id="message.type-delete"
+                defaultMessage="Type {delete} in the box below to confirm."
+                values={{ delete: <b>{CONFIRMATION_WORD}</b> }}
+              />
             </p>
             <FormRow>
               <Field name="confirmation" type="text" />
               <FormError name="confirmation" />
             </FormRow>
             <FormButtons>
-              <Button type="submit" variant="danger">
-                Delete
+              <Button
+                type="submit"
+                variant="danger"
+                disabled={props.values.confirmation !== CONFIRMATION_WORD}
+              >
+                <FormattedMessage id="button.delete" defaultMessage="Delete" />
               </Button>
-              <Button onClick={onClose}>Cancel</Button>
+              <Button onClick={onClose}>
+                <FormattedMessage id="button.cancel" defaultMessage="Cancel" />
+              </Button>
             </FormButtons>
             <FormMessage>{message}</FormMessage>
           </Form>

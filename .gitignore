@@ -16,6 +16,8 @@
 # production
 /build
 /public/umami.js
+/lang-compiled
+/lang-formatted
 
 # misc
 .DS_Store

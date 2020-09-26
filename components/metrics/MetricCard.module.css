@@ -15,4 +15,5 @@
 
 .label {
   font-size: var(--font-size-normal);
+  white-space: nowrap;
 }

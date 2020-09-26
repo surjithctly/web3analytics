@@ -1,23 +1,50 @@
-.link,
-.link:active,
-.link:visited {
+a.link,
+a.link:active,
+a.link:visited {
   position: relative;
-  color: #2c2c2c;
+  color: var(--gray900);
   text-decoration: none;
+  display: inline-flex;
+  align-items: center;
 }
 
-.link:before {
+a.link:before {
   content: '';
   position: absolute;
   bottom: -2px;
   width: 0;
   height: 2px;
-  background: #2680eb;
+  background: var(--primary400);
   opacity: 0.5;
   transition: width 100ms;
 }
 
-.link:hover:before {
+a.link:hover:before {
   width: 100%;
   transition: width 100ms;
+}
+
+a.link.large {
+  font-size: var(--font-size-large);
+}
+
+a.link.small {
+  font-size: var(--font-size-small);
+}
+
+a.link.xsmall {
+  font-size: var(--font-size-xsmall);
+}
+
+a.link .icon + * {
+  margin-left: 10px;
+}
+
+a.link.iconRight .icon {
+  order: 1;
+  margin-left: 10px;
+}
+
+a.link.iconRight .icon + * {
+  margin: 0;
 }

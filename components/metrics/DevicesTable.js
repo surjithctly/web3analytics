@@ -1,17 +1,20 @@
 import React from 'react';
 import MetricsTable from './MetricsTable';
 import { deviceFilter } from 'lib/filters';
+import { FormattedMessage } from 'react-intl';
+import { getDeviceMessage } from 'components/messages';
 
-export default function DevicesTable({ websiteId, limit, onExpand }) {
+export default function DevicesTable({ websiteId, token, limit }) {
   return (
     <MetricsTable
-      title="Devices"
+      title={<FormattedMessage id="metrics.devices" defaultMessage="Devices" />}
       type="device"
-      metric="Visitors"
+      metric={<FormattedMessage id="metrics.visitors" defaultMessage="Visitors" />}
       websiteId={websiteId}
+      token={token}
       limit={limit}
       dataFilter={deviceFilter}
-      onExpand={onExpand}
+      renderLabel={({ x }) => getDeviceMessage(x)}
     />
   );
 }

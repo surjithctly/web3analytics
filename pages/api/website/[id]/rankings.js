@@ -1,6 +1,7 @@
-import { getRankings } from 'lib/queries';
-import { ok, badRequest } from 'lib/response';
-import { DOMAIN_REGEX } from '../../../../lib/constants';
+import { getPageviewMetrics, getSessionMetrics } from 'lib/queries';
+import { ok, badRequest, methodNotAllowed, unauthorized } from 'lib/response';
+import { DOMAIN_REGEX } from 'lib/constants';
+import { allowQuery } from 'lib/auth';
 
 const sessionColumns = ['browser', 'os', 'device', 'country'];
 const pageviewColumns = ['url', 'referrer'];
@@ -25,29 +26,41 @@ function getColumn(type) {
 }
 
 export default async (req, res) => {
-  const { id, type, start_at, end_at, domain } = req.query;
-  const websiteId = +id;
-  const startDate = new Date(+start_at);
-  const endDate = new Date(+end_at);
+  if (req.method === 'GET') {
+    if (!(await allowQuery(req))) {
+      return unauthorized(res);
+    }
 
-  if (
-    type !== 'event' &&
-    !sessionColumns.includes(type) &&
-    !pageviewColumns.includes(type) &&
-    domain &&
-    DOMAIN_REGEX.test(domain)
-  ) {
-    return badRequest(res);
+    const { id, type, start_at, end_at, domain, url } = req.query;
+
+    if (domain && !DOMAIN_REGEX.test(domain)) {
+      return badRequest(res);
+    }
+
+    const websiteId = +id;
+    const startDate = new Date(+start_at);
+    const endDate = new Date(+end_at);
+
+    if (sessionColumns.includes(type)) {
+      const data = await getSessionMetrics(websiteId, startDate, endDate, type, url);
+
+      return ok(res, data);
+    }
+
+    if (type === 'event' || pageviewColumns.includes(type)) {
+      const data = await getPageviewMetrics(
+        websiteId,
+        startDate,
+        endDate,
+        getColumn(type),
+        getTable(type),
+        domain,
+        type !== 'url' ? url : undefined,
+      );
+
+      return ok(res, data);
+    }
   }
 
-  const rankings = await getRankings(
-    websiteId,
-    startDate,
-    endDate,
-    getColumn(type),
-    getTable(type),
-    domain,
-  );
-
-  return ok(res, rankings);
+  return methodNotAllowed(res);
 };

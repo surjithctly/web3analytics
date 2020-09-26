@@ -1,5 +1,6 @@
 import React from 'react';
 import classNames from 'classnames';
+import NoData from 'components/common/NoData';
 import styles from './Table.module.css';
 
 export default function Table({ columns, rows, empty }) {
@@ -21,6 +22,7 @@ export default function Table({ columns, rows, empty }) {
         ))}
       </div>
       <div className={styles.body}>
+        {rows.length === 0 && <NoData />}
         {rows.map((row, rowIndex) => (
           <div className={classNames(styles.row, 'row')} key={rowIndex}>
             {columns.map(({ key, render, className, style, cell }) => (

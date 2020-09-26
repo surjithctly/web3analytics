@@ -3,30 +3,33 @@
   justify-content: center;
   align-items: center;
   font-size: var(--font-size-normal);
+  color: var(--gray900);
   background: var(--gray100);
   padding: 8px 16px;
   border-radius: 4px;
   border: 0;
   outline: none;
   cursor: pointer;
-  white-space: nowrap;
   position: relative;
 }
 
 .button:hover {
-  background: #eaeaea;
+  background: var(--gray200);
 }
 
 .button:active {
-  color: initial;
+  color: var(--gray900);
+}
+
+.label {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  max-width: 300px;
 }
 
 .large {
   font-size: var(--font-size-large);
-}
-
-.medium {
-  font-size: var(--font-size-normal);
 }
 
 .small {
@@ -37,20 +40,60 @@
   font-size: var(--font-size-xsmall);
 }
 
-.action {
-  color: var(--gray50) !important;
-  background: var(--gray900) !important;
+.action,
+.action:active {
+  color: var(--gray50);
+  background: var(--gray900);
 }
 
 .action:hover {
-  background: var(--gray800) !important;
+  background: var(--gray800);
 }
 
 .danger {
-  color: var(--gray50) !important;
-  background: var(--red500) !important;
+  color: var(--gray50);
+  background: var(--red500);
 }
 
 .danger:hover {
-  background: var(--red400) !important;
+  background: var(--red400);
+}
+
+.light {
+  background: transparent;
+}
+
+.light:hover {
+  background: inherit;
+}
+
+.button .icon + * {
+  margin-left: 10px;
+}
+
+.button.iconRight .icon {
+  order: 1;
+  margin-left: 10px;
+}
+
+.button.iconRight .icon + * {
+  margin: 0;
+}
+
+.button:disabled {
+  cursor: default;
+  color: var(--gray500);
+  background: var(--gray75);
+}
+
+.button:disabled:active {
+  color: var(--gray500);
+}
+
+.button:disabled:hover {
+  background: var(--gray75);
+}
+
+.button.light:disabled {
+  background: var(--gray50);
 }
