@@ -10,6 +10,7 @@ import TimezoneSetting from 'components/settings/TimezoneSetting';
 import Dots from 'assets/ellipsis-h.svg';
 import styles from './ProfileSettings.module.css';
 import DateRangeSetting from './DateRangeSetting';
+import useEscapeKey from 'hooks/useEscapeKey';
 
 export default function ProfileSettings() {
   const user = useSelector(state => state.user);
@@ -22,6 +23,10 @@ export default function ProfileSettings() {
     setMessage(<FormattedMessage id="message.save-success" defaultMessage="Saved successfully." />);
   }
 
+  useEscapeKey(() => {
+    setChangePassword(false);
+  });
+
   return (
     <>
       <PageHeader>
@@ -29,7 +34,7 @@ export default function ProfileSettings() {
           <FormattedMessage id="label.profile" defaultMessage="Profile" />
         </div>
         <Button icon={<Dots />} size="small" onClick={() => setChangePassword(true)}>
-          <FormattedMessage id="button.change-password" defaultMessage="Change password" />
+          <FormattedMessage id="label.change-password" defaultMessage="Change password" />
         </Button>
       </PageHeader>
       <dl className={styles.list}>
@@ -52,7 +57,7 @@ export default function ProfileSettings() {
       </dl>
       {changePassword && (
         <Modal
-          title={<FormattedMessage id="title.change-password" defaultMessage="Change password" />}
+          title={<FormattedMessage id="label.change-password" defaultMessage="Change password" />}
         >
           <ChangePasswordForm
             values={{ user_id }}

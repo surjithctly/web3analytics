@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
+import { FormattedMessage } from 'react-intl';
 import { Formik, Form, Field } from 'formik';
-import { del } from 'lib/web';
 import Button from 'components/common/Button';
 import FormLayout, {
   FormButtons,
@@ -8,7 +8,7 @@ import FormLayout, {
   FormMessage,
   FormRow,
 } from 'components/layout/FormLayout';
-import { FormattedMessage } from 'react-intl';
+import useDelete from 'hooks/useDelete';
 
 const CONFIRMATION_WORD = 'DELETE';
 
@@ -27,15 +27,18 @@ const validate = ({ confirmation }) => {
 };
 
 export default function DeleteForm({ values, onSave, onClose }) {
+  const del = useDelete();
   const [message, setMessage] = useState();
 
   const handleSubmit = async ({ type, id }) => {
-    const response = await del(`/api/${type}/${id}`);
+    const { ok, data } = await del(`/api/${type}/${id}`);
 
-    if (typeof response !== 'string') {
+    if (ok) {
       onSave();
     } else {
-      setMessage(<FormattedMessage id="message.failure" defaultMessage="Something went wrong." />);
+      setMessage(
+        data || <FormattedMessage id="message.failure" defaultMessage="Something went wrong." />,
+      );
     }
   };
 
@@ -69,8 +72,10 @@ export default function DeleteForm({ values, onSave, onClose }) {
               />
             </p>
             <FormRow>
-              <Field name="confirmation" type="text" />
-              <FormError name="confirmation" />
+              <div>
+                <Field name="confirmation" type="text" />
+                <FormError name="confirmation" />
+              </div>
             </FormRow>
             <FormButtons>
               <Button
@@ -78,10 +83,10 @@ export default function DeleteForm({ values, onSave, onClose }) {
                 variant="danger"
                 disabled={props.values.confirmation !== CONFIRMATION_WORD}
               >
-                <FormattedMessage id="button.delete" defaultMessage="Delete" />
+                <FormattedMessage id="label.delete" defaultMessage="Delete" />
               </Button>
               <Button onClick={onClose}>
-                <FormattedMessage id="button.cancel" defaultMessage="Cancel" />
+                <FormattedMessage id="label.cancel" defaultMessage="Cancel" />
               </Button>
             </FormButtons>
             <FormMessage>{message}</FormMessage>

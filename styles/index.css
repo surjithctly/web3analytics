@@ -20,8 +20,17 @@ body {
   font-family: 'Noto Sans SC', sans-serif !important;
 }
 
+.zh-TW {
+  font-family: 'Noto Sans SC', sans-serif !important;
+}
+
 .ja-JP {
   font-family: 'Noto Sans JP', sans-serif !important;
+}
+
+.he-IL {
+  display: inline-block;
+  direction: rtl;
 }
 
 *,
@@ -37,6 +46,9 @@ h4,
 h5,
 h6 {
   font-weight: 400;
+  line-height: 30px;
+  padding: 0;
+  margin: 0;
 }
 
 button,

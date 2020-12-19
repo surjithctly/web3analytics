@@ -6,10 +6,14 @@ import tinycolor from 'tinycolor2';
 import useTheme from 'hooks/useTheme';
 import { THEME_COLORS } from 'lib/constants';
 import styles from './WorldMap.module.css';
+import useCountryNames from 'hooks/useCountryNames';
+import useLocale from 'hooks/useLocale';
+import { useRouter } from 'next/router';
 
 const geoUrl = '/world-110m.json';
 
 export default function WorldMap({ data, className }) {
+  const { basePath } = useRouter();
   const [tooltip, setTooltip] = useState();
   const [theme] = useTheme();
   const colors = useMemo(
@@ -21,6 +25,8 @@ export default function WorldMap({ data, className }) {
     }),
     [theme],
   );
+  const [locale] = useLocale();
+  const countryNames = useCountryNames(locale);
 
   function getFillColor(code) {
     if (code === 'AQ') return;
@@ -39,10 +45,10 @@ export default function WorldMap({ data, className }) {
     return code === 'AQ' ? 0 : 1;
   }
 
-  function handleHover({ ISO_A2: code, NAME: name }) {
+  function handleHover(code) {
     if (code === 'AQ') return;
     const country = data?.find(({ x }) => x === code);
-    setTooltip(`${name}: ${country?.y || 0} visitors`);
+    setTooltip(`${countryNames[code]}: ${country?.y || 0} visitors`);
   }
 
   return (
@@ -53,7 +59,7 @@ export default function WorldMap({ data, className }) {
     >
       <ComposableMap projection="geoMercator">
         <ZoomableGroup zoom={0.8} minZoom={0.7} center={[0, 40]}>
-          <Geographies geography={geoUrl}>
+          <Geographies geography={`${basePath}${geoUrl}`}>
             {({ geographies }) => {
               return geographies.map(geo => {
                 const code = geo.properties.ISO_A2;
@@ -70,7 +76,7 @@ export default function WorldMap({ data, className }) {
                       hover: { outline: 'none', fill: colors.hoverColor },
                       pressed: { outline: 'none' },
                     }}
-                    onMouseOver={() => handleHover(geo.properties)}
+                    onMouseOver={() => handleHover(code)}
                     onMouseOut={() => setTooltip(null)}
                   />
                 );
