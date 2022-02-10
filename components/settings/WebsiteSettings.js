@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FormattedMessage } from 'react-intl';
+import { useSelector } from 'react-redux';
 import classNames from 'classnames';
 import Link from 'components/common/Link';
 import Table from 'components/common/Table';
@@ -7,6 +8,7 @@ import Button from 'components/common/Button';
 import PageHeader from 'components/layout/PageHeader';
 import Modal from 'components/common/Modal';
 import WebsiteEditForm from 'components/forms/WebsiteEditForm';
+import ResetForm from 'components/forms/ResetForm';
 import DeleteForm from 'components/forms/DeleteForm';
 import TrackingCodeForm from 'components/forms/TrackingCodeForm';
 import ShareUrlForm from 'components/forms/ShareUrlForm';
@@ -16,6 +18,7 @@ import Toast from 'components/common/Toast';
 import Favicon from 'components/common/Favicon';
 import Pen from 'assets/pen.svg';
 import Trash from 'assets/trash.svg';
+import Reset from 'assets/redo.svg';
 import Plus from 'assets/plus.svg';
 import Code from 'assets/code.svg';
 import LinkIcon from 'assets/link.svg';
@@ -23,14 +26,18 @@ import useFetch from 'hooks/useFetch';
 import styles from './WebsiteSettings.module.css';
 
 export default function WebsiteSettings() {
+  const user = useSelector(state => state.user);
   const [editWebsite, setEditWebsite] = useState();
+  const [resetWebsite, setResetWebsite] = useState();
   const [deleteWebsite, setDeleteWebsite] = useState();
   const [addWebsite, setAddWebsite] = useState();
   const [showCode, setShowCode] = useState();
   const [showUrl, setShowUrl] = useState();
   const [saved, setSaved] = useState(0);
   const [message, setMessage] = useState();
-  const { data } = useFetch(`/api/websites`, {}, [saved]);
+  const { data } = useFetch(`/api/websites` + (user.is_admin ? '?include_all=true' : ''), {}, [
+    saved,
+  ]);
 
   const Buttons = row => (
     <ButtonLayout align="right">
@@ -52,12 +59,27 @@ export default function WebsiteSettings() {
         tooltipId={`button-code-${row.website_id}`}
         onClick={() => setShowCode(row)}
       />
-      <Button icon={<Pen />} size="small" onClick={() => setEditWebsite(row)}>
-        <FormattedMessage id="label.edit" defaultMessage="Edit" />
-      </Button>
-      <Button icon={<Trash />} size="small" onClick={() => setDeleteWebsite(row)}>
-        <FormattedMessage id="label.delete" defaultMessage="Delete" />
-      </Button>
+      <Button
+        icon={<Pen />}
+        size="small"
+        tooltip={<FormattedMessage id="label.edit" defaultMessage="Edit" />}
+        tooltipId={`button-edit-${row.website_id}`}
+        onClick={() => setEditWebsite(row)}
+      />
+      <Button
+        icon={<Reset />}
+        size="small"
+        tooltip={<FormattedMessage id="label.reset" defaultMessage="Reset" />}
+        tooltipId={`button-reset-${row.website_id}`}
+        onClick={() => setResetWebsite(row)}
+      />
+      <Button
+        icon={<Trash />}
+        size="small"
+        tooltip={<FormattedMessage id="label.delete" defaultMessage="Delete" />}
+        tooltipId={`button-delete-${row.website_id}`}
+        onClick={() => setDeleteWebsite(row)}
+      />
     </ButtonLayout>
   );
 
@@ -67,6 +89,30 @@ export default function WebsiteSettings() {
       {name}
     </Link>
   );
+
+  const adminColumns = [
+    {
+      key: 'name',
+      label: <FormattedMessage id="label.name" defaultMessage="Name" />,
+      className: 'col-4 col-xl-3',
+      render: DetailsLink,
+    },
+    {
+      key: 'domain',
+      label: <FormattedMessage id="label.domain" defaultMessage="Domain" />,
+      className: 'col-4 col-xl-3',
+    },
+    {
+      key: 'account',
+      label: <FormattedMessage id="label.owner" defaultMessage="Owner" />,
+      className: 'col-4 col-xl-1',
+    },
+    {
+      key: 'action',
+      className: classNames(styles.buttons, 'col-12 col-xl-5 pt-2 pt-xl-0'),
+      render: Buttons,
+    },
+  ];
 
   const columns = [
     {
@@ -96,6 +142,7 @@ export default function WebsiteSettings() {
   function handleClose() {
     setAddWebsite(null);
     setEditWebsite(null);
+    setResetWebsite(null);
     setDeleteWebsite(null);
     setShowCode(null);
     setShowUrl(null);
@@ -130,7 +177,7 @@ export default function WebsiteSettings() {
           <FormattedMessage id="label.add-website" defaultMessage="Add website" />
         </Button>
       </PageHeader>
-      <Table columns={columns} rows={data} empty={empty} />
+      <Table columns={user.is_admin ? adminColumns : columns} rows={data} empty={empty} />
       {editWebsite && (
         <Modal title={<FormattedMessage id="label.edit-website" defaultMessage="Edit website" />}>
           <WebsiteEditForm values={editWebsite} onSave={handleSave} onClose={handleClose} />
@@ -139,6 +186,17 @@ export default function WebsiteSettings() {
       {addWebsite && (
         <Modal title={<FormattedMessage id="label.add-website" defaultMessage="Add website" />}>
           <WebsiteEditForm onSave={handleSave} onClose={handleClose} />
+        </Modal>
+      )}
+      {resetWebsite && (
+        <Modal
+          title={<FormattedMessage id="label.reset-website" defaultMessage="Reset statistics" />}
+        >
+          <ResetForm
+            values={{ type: 'website', id: resetWebsite.website_id, name: resetWebsite.name }}
+            onSave={handleSave}
+            onClose={handleClose}
+          />
         </Modal>
       )}
       {deleteWebsite && (

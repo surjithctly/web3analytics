@@ -8,19 +8,24 @@ import LanguageButton from 'components/settings/LanguageButton';
 import ThemeButton from 'components/settings/ThemeButton';
 import UpdateNotice from 'components/common/UpdateNotice';
 import UserButton from 'components/settings/UserButton';
+import Button from 'components/common/Button';
 import Logo from 'assets/logo.svg';
 import styles from './Header.module.css';
+import useLocale from 'hooks/useLocale';
+import XMark from 'assets/xmark.svg';
+import Bars from 'assets/bars.svg';
 
 export default function Header() {
   const user = useSelector(state => state.user);
   const [active, setActive] = useState(false);
+  const { dir } = useLocale();
 
   function handleClick() {
     setActive(state => !state);
   }
 
   return (
-    <nav className="container">
+    <nav className="container" dir={dir}>
       {user?.is_admin && <UpdateNotice />}
       <div className={classNames(styles.header, 'row align-items-center')}>
         <div className={styles.nav}>
@@ -30,23 +35,11 @@ export default function Header() {
               <Link href={user ? '/' : 'https://umami.is'}>umami</Link>
             </div>
           </div>
-          <button
-            onClick={handleClick}
-            role="button"
+          <Button
             className={styles.burger}
-            aria-label="menu"
-            aria-expanded="false"
-          >
-            {active ? (
-              <div> X </div>
-            ) : (
-              <>
-                <span></span>
-                <span></span>
-                <span></span>
-              </>
-            )}
-          </button>
+            icon={active ? <XMark /> : <Bars />}
+            onClick={handleClick}
+          />
           {user && (
             <div className={styles.items}>
               <div className={active ? classNames(styles.active) : ''}>

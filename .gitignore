@@ -17,6 +17,7 @@
 /build
 /public/umami.js
 /public/geo
+/public/lang
 /lang-compiled
 
 # misc
@@ -24,7 +25,7 @@
 .idea
 *.iml
 *.log
-.vscode/*
+/.vscode/
 
 # debug
 npm-debug.log*

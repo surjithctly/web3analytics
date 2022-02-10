@@ -7,7 +7,7 @@ import Tag from 'components/common/Tag';
 import Dot from 'components/common/Dot';
 import FilterButtons from 'components/common/FilterButtons';
 import NoData from 'components/common/NoData';
-import { devices } from 'components/messages';
+import { getDeviceMessage } from 'components/messages';
 import useLocale from 'hooks/useLocale';
 import useCountryNames from 'hooks/useCountryNames';
 import { BROWSERS } from 'lib/constants';
@@ -31,7 +31,7 @@ const TYPE_ICONS = {
 
 export default function RealtimeLog({ data, websites, websiteId }) {
   const intl = useIntl();
-  const [locale] = useLocale();
+  const { locale } = useLocale();
   const countryNames = useCountryNames(locale);
   const [filter, setFilter] = useState(TYPE_ALL);
 
@@ -137,7 +137,7 @@ export default function RealtimeLog({ data, websites, websiteId }) {
             ),
             browser: <b>{BROWSERS[browser]}</b>,
             os: <b>{os}</b>,
-            device: <b>{intl.formatMessage(devices[device])?.toLowerCase()}</b>,
+            device: <b>{getDeviceMessage(device)}</b>,
           }}
         />
       );
