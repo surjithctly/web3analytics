@@ -26,28 +26,32 @@ export default function MetricsTable({
   ...props
 }) {
   const shareToken = useShareToken();
-  const [dateRange] = useDateRange(websiteId);
-  const { startDate, endDate, modified } = dateRange;
+  const [{ startDate, endDate, modified }] = useDateRange(websiteId);
   const {
     resolve,
     router,
-    query: { url },
+    query: { url, referrer, os, browser, device, country },
   } = usePageQuery();
 
   const { data, loading, error } = useFetch(
-    `/api/website/${websiteId}/metrics`,
+    `/website/${websiteId}/metrics`,
     {
       params: {
         type,
         start_at: +startDate,
         end_at: +endDate,
         url,
+        referrer,
+        os,
+        browser,
+        device,
+        country,
       },
       onDataLoad,
       delay: DEFAULT_ANIMATION_DURATION,
       headers: { [TOKEN_HEADER]: shareToken?.token },
     },
-    [modified],
+    [modified, url, referrer, os, browser, device, country],
   );
 
   const filteredData = useMemo(() => {

@@ -1,6 +1,6 @@
 # umami
 
-Umami is a simple, fast, website analytics alternative to Google Analytics.
+Umami is a simple, fast, privacy-focused alternative to Google Analytics.
 
 ## Getting started
 
@@ -100,6 +100,13 @@ To get the latest features, simply do a pull, install any new dependencies, and 
 git pull
 npm install
 npm run build
+```
+
+To update the Docker image, simply pull the new images and rebuild:
+
+```bash
+docker-compose pull
+docker-compose up --force-recreate
 ```
 
 ## License
