@@ -4,10 +4,19 @@ const chalk = require('chalk');
 const spawn = require('cross-spawn');
 const { execSync } = require('child_process');
 
+if (process.env.SKIP_DB_CHECK) {
+  console.log('Skipping database check.');
+  process.exit(0);
+}
+
 const prisma = new PrismaClient();
 
 function success(msg) {
   console.log(chalk.greenBright(`✓ ${msg}`));
+}
+
+function error(msg) {
+  console.log(chalk.redBright(`✗ ${msg}`));
 }
 
 async function checkEnv() {
@@ -34,6 +43,7 @@ async function checkTables() {
 
     success('Database tables found.');
   } catch (e) {
+    error('Database tables not found.');
     console.log('Adding tables...');
 
     console.log(execSync('prisma migrate deploy').toString());
@@ -58,13 +68,21 @@ async function run(cmd, args) {
 async function checkMigrations() {
   const output = await run('prisma', ['migrate', 'status']);
 
+  console.log(output);
+
   const missingMigrations = output.includes('have not yet been applied');
+  const missingInitialMigration =
+    output.includes('01_init') && !output.includes('The last common migration is: 01_init');
   const notManaged = output.includes('The current database is not managed');
 
   if (notManaged || missingMigrations) {
     console.log('Running update...');
 
-    console.log(execSync('prisma migrate resolve --applied "01_init"').toString());
+    if (missingInitialMigration) {
+      console.log(execSync('prisma migrate resolve --applied "01_init"').toString());
+    }
+
+    console.log(execSync('prisma migrate deploy').toString());
   }
 
   success('Database is up to date.');
