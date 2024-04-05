@@ -11,26 +11,15 @@ export interface TeamWebsiteRequestQuery extends SearchFilter {
   teamId: string;
 }
 
-export interface TeamWebsiteRequestBody {
-  name: string;
-  domain: string;
-  shareId: string;
-}
-
 const schema = {
   GET: yup.object().shape({
     teamId: yup.string().uuid().required(),
     ...pageInfo,
   }),
-  POST: yup.object().shape({
-    name: yup.string().max(100).required(),
-    domain: yup.string().max(500).required(),
-    shareId: yup.string().max(50).nullable(),
-  }),
 };
 
 export default async (
-  req: NextApiRequestQueryBody<TeamWebsiteRequestQuery, TeamWebsiteRequestBody>,
+  req: NextApiRequestQueryBody<TeamWebsiteRequestQuery, any>,
   res: NextApiResponse,
 ) => {
   await useAuth(req, res);
@@ -43,13 +32,7 @@ export default async (
       return unauthorized(res);
     }
 
-    const { page, query, pageSize } = req.query;
-
-    const websites = await getTeamWebsites(teamId, {
-      page,
-      query,
-      pageSize,
-    });
+    const websites = await getTeamWebsites(teamId, req.query);
 
     return ok(res, websites);
   }

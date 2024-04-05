@@ -33,23 +33,21 @@ export function WebsiteData({ websiteId, onSave }: { websiteId: string; onSave?:
 
   return (
     <>
-      {process.env.cloudMode && (
-        <ActionForm
-          label={formatMessage(labels.transferWebsite)}
-          description={formatMessage(messages.transferWebsite)}
-        >
-          <ModalTrigger disabled={!isTeamOwner}>
-            <Button variant="secondary" disabled={!isTeamOwner}>
-              {formatMessage(labels.transfer)}
-            </Button>
-            <Modal title={formatMessage(labels.transferWebsite)}>
-              {(close: () => void) => (
-                <WebsiteTransferForm websiteId={websiteId} onSave={handleSave} onClose={close} />
-              )}
-            </Modal>
-          </ModalTrigger>
-        </ActionForm>
-      )}
+      <ActionForm
+        label={formatMessage(labels.transferWebsite)}
+        description={formatMessage(messages.transferWebsite)}
+      >
+        <ModalTrigger disabled={!isTeamOwner}>
+          <Button variant="secondary" disabled={!isTeamOwner}>
+            {formatMessage(labels.transfer)}
+          </Button>
+          <Modal title={formatMessage(labels.transferWebsite)}>
+            {(close: () => void) => (
+              <WebsiteTransferForm websiteId={websiteId} onSave={handleSave} onClose={close} />
+            )}
+          </Modal>
+        </ModalTrigger>
+      </ActionForm>
       <ActionForm
         label={formatMessage(labels.resetWebsite)}
         description={formatMessage(messages.resetWebsiteWarning)}
@@ -68,7 +66,9 @@ export function WebsiteData({ websiteId, onSave }: { websiteId: string; onSave?:
         description={formatMessage(messages.deleteWebsiteWarning)}
       >
         <ModalTrigger>
-          <Button variant="danger">{formatMessage(labels.delete)}</Button>
+          <Button data-test="button-delete" variant="danger">
+            {formatMessage(labels.delete)}
+          </Button>
           <Modal title={formatMessage(labels.deleteWebsite)}>
             {(close: () => void) => (
               <WebsiteDeleteForm websiteId={websiteId} onSave={handleSave} onClose={close} />

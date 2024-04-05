@@ -11,7 +11,7 @@ export function ProfileButton() {
   const { user } = useLogin();
   const router = useRouter();
   const { dir } = useLocale();
-  const cloudMode = Boolean(process.env.cloudMode);
+  const cloudMode = !!process.env.cloudMode;
 
   const handleSelect = (key: Key, close: () => void) => {
     if (key === 'profile') {
@@ -25,7 +25,7 @@ export function ProfileButton() {
 
   return (
     <PopupTrigger>
-      <Button variant="quiet">
+      <Button data-test="button-profile" variant="quiet">
         <Icon>
           <Icons.Profile />
         </Icon>
@@ -41,7 +41,7 @@ export function ProfileButton() {
               <Text>{formatMessage(labels.profile)}</Text>
             </Item>
             {!cloudMode && (
-              <Item key="logout" className={styles.item}>
+              <Item data-test="item-logout" key="logout" className={styles.item}>
                 <Icon>
                   <Icons.Logout />
                 </Icon>

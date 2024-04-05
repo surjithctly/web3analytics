@@ -27,17 +27,12 @@
 }
 
 .icon {
-  margin-right: 10px;
+  margin-inline-end: 10px;
 }
 
 .time {
   min-width: 60px;
   overflow: hidden;
-}
-
-.website {
-  text-align: right;
-  padding: 0 20px;
 }
 
 .detail {

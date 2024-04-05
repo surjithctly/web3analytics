@@ -2,10 +2,11 @@ import { Prisma } from '@prisma/client';
 import prisma from '@umami/prisma-client';
 import moment from 'moment-timezone';
 import { MYSQL, POSTGRESQL, getDatabaseType } from 'lib/db';
-import { FILTER_COLUMNS, SESSION_COLUMNS, OPERATORS, DEFAULT_PAGE_SIZE } from './constants';
+import { SESSION_COLUMNS, OPERATORS, DEFAULT_PAGE_SIZE } from './constants';
 import { loadWebsite } from './load';
 import { maxDate } from './date';
 import { QueryFilters, QueryOptions, SearchFilter } from './types';
+import { filtersToArray } from './params';
 
 const MYSQL_DATE_FORMATS = {
   minute: '%Y-%m-%d %H:%i:00',
@@ -92,24 +93,28 @@ function getTimestampDiffQuery(field1: string, field2: string): string {
   }
 }
 
-function mapFilter(column: string, operator: string, name: string, type = 'varchar') {
+function mapFilter(column: string, operator: string, name: string, type: string = '') {
+  const db = getDatabaseType();
+  const like = db === POSTGRESQL ? 'ilike' : 'like';
+  const value = `{{${name}${type ? `::${type}` : ''}}}`;
+
   switch (operator) {
     case OPERATORS.equals:
-      return `${column} = {{${name}::${type}}}`;
+      return `${column} = ${value}`;
     case OPERATORS.notEquals:
-      return `${column} != {{${name}::${type}}}`;
+      return `${column} != ${value}`;
+    case OPERATORS.contains:
+      return `${column} ${like} ${value}`;
+    case OPERATORS.doesNotContain:
+      return `${column} not ${like} ${value}`;
     default:
       return '';
   }
 }
 
 function getFilterQuery(filters: QueryFilters = {}, options: QueryOptions = {}): string {
-  const query = Object.keys(filters).reduce((arr, name) => {
-    const value = filters[name];
-    const operator = value?.filter ?? OPERATORS.equals;
-    const column = FILTER_COLUMNS[name] ?? options?.columns?.[name];
-
-    if (value !== undefined && column) {
+  const query = filtersToArray(filters, options).reduce((arr, { name, column, operator }) => {
+    if (column) {
       arr.push(`and ${mapFilter(column, operator, name)}`);
 
       if (name === 'referrer') {
@@ -125,11 +130,11 @@ function getFilterQuery(filters: QueryFilters = {}, options: QueryOptions = {}):
   return query.join('\n');
 }
 
-function normalizeFilters(filters = {}) {
-  return Object.keys(filters).reduce((obj, key) => {
-    const value = filters[key];
-
-    obj[key] = value?.value ?? value;
+function getFilterParams(filters: QueryFilters = {}) {
+  return filtersToArray(filters).reduce((obj, { name, operator, value }) => {
+    obj[name] = [OPERATORS.contains, OPERATORS.doesNotContain].includes(operator)
+      ? `%${value}%`
+      : value;
 
     return obj;
   }, {});
@@ -141,15 +146,16 @@ async function parseFilters(
   options: QueryOptions = {},
 ) {
   const website = await loadWebsite(websiteId);
+  const joinSession = Object.keys(filters).find(key => SESSION_COLUMNS.includes(key));
 
   return {
     joinSession:
-      options?.joinSession || Object.keys(filters).find(key => SESSION_COLUMNS.includes(key))
+      options?.joinSession || joinSession
         ? `inner join session on website_event.session_id = session.session_id`
         : '',
     filterQuery: getFilterQuery(filters, options),
     params: {
-      ...normalizeFilters(filters),
+      ...getFilterParams(filters),
       websiteId,
       startDate: maxDate(filters.startDate, website?.resetAt),
       websiteDomain: website.domain,
@@ -167,7 +173,10 @@ async function rawQuery(sql: string, data: object): Promise<any> {
 
   const query = sql?.replaceAll(/\{\{\s*(\w+)(::\w+)?\s*}}/g, (...args) => {
     const [, name, type] = args;
-    params.push(data[name]);
+
+    const value = data[name];
+
+    params.push(value);
 
     return db === MYSQL ? '?' : `$${params.length}${type ?? ''}`;
   });
@@ -198,14 +207,14 @@ async function pagedQuery<T>(model: string, criteria: T, filters: SearchFilter) 
   return { data, count, page: +page, pageSize: size, orderBy };
 }
 
-function getQueryMode(): Prisma.QueryMode {
+function getQueryMode(): { mode?: Prisma.QueryMode } {
   const db = getDatabaseType();
 
   if (db === POSTGRESQL) {
-    return 'insensitive';
+    return { mode: 'insensitive' };
   }
 
-  return 'default';
+  return {};
 }
 
 function getSearchParameters(query: string, filters: { [key: string]: any }[]) {
@@ -220,7 +229,7 @@ function getSearchParameters(query: string, filters: { [key: string]: any }[]) {
         typeof value === 'string'
           ? {
               [value]: query,
-              mode,
+              ...mode,
             }
           : parseFilter(value),
     };
