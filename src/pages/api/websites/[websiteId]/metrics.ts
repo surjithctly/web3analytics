@@ -87,7 +87,7 @@ export default async (
     }
 
     if (SESSION_COLUMNS.includes(type)) {
-      const data = await getSessionMetrics(websiteId, column, filters, limit, offset);
+      const data = await getSessionMetrics(websiteId, type, filters, limit, offset);
 
       if (type === 'language') {
         const combined = {};
@@ -109,7 +109,7 @@ export default async (
     }
 
     if (EVENT_COLUMNS.includes(type)) {
-      const data = await getPageviewMetrics(websiteId, column, filters, limit, offset);
+      const data = await getPageviewMetrics(websiteId, type, filters, limit, offset);
 
       return ok(res, data);
     }
