@@ -1,23 +1,16 @@
 import { useEffect } from 'react';
-import useStore, { setConfig } from 'store/app';
-import { useApi } from './useApi';
+import useStore, { setConfig } from '@/store/app';
+import { getConfig, Config } from '@/app/actions/getConfig';
 
-let loading = false;
-
-export function useConfig() {
+export function useConfig(): Config {
   const { config } = useStore();
-  const { get } = useApi();
-  const configUrl = process.env.configUrl;
 
   async function loadConfig() {
-    const data = await get(configUrl);
-    loading = false;
-    setConfig(data);
+    setConfig(await getConfig());
   }
 
   useEffect(() => {
-    if (!config && !loading && configUrl) {
-      loading = true;
+    if (!config) {
       loadConfig();
     }
   }, []);

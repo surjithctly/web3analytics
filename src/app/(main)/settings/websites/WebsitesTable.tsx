@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
-import { Text, Icon, Icons, GridTable, GridColumn, useBreakpoint } from 'react-basics';
-import { useMessages, useTeamUrl } from 'components/hooks';
-import LinkButton from 'components/common/LinkButton';
+import { Text, Icon, Icons, GridTable, GridColumn } from 'react-basics';
+import { useMessages, useTeamUrl } from '@/components/hooks';
+import LinkButton from '@/components/common/LinkButton';
 
 export interface WebsitesTableProps {
   data: any[];
@@ -20,7 +20,6 @@ export function WebsitesTable({
   children,
 }: WebsitesTableProps) {
   const { formatMessage, labels } = useMessages();
-  const breakpoint = useBreakpoint();
   const { renderTeamUrl } = useTeamUrl();
 
   if (!data?.length) {
@@ -28,7 +27,7 @@ export function WebsitesTable({
   }
 
   return (
-    <GridTable data={data} cardMode={['xs', 'sm', 'md'].includes(breakpoint)}>
+    <GridTable data={data}>
       <GridColumn name="name" label={formatMessage(labels.name)} />
       <GridColumn name="domain" label={formatMessage(labels.domain)} />
       {showActions && (

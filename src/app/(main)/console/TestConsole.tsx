@@ -1,15 +1,16 @@
+'use client';
 import { Button } from 'react-basics';
 import Link from 'next/link';
 import Script from 'next/script';
-import WebsiteSelect from 'components/input/WebsiteSelect';
-import Page from 'components/layout/Page';
-import PageHeader from 'components/layout/PageHeader';
-import EventsChart from 'components/metrics/EventsChart';
+import WebsiteSelect from '@/components/input/WebsiteSelect';
+import Page from '@/components/layout/Page';
+import PageHeader from '@/components/layout/PageHeader';
+import EventsChart from '@/components/metrics/EventsChart';
 import WebsiteChart from '../websites/[websiteId]/WebsiteChart';
-import { useApi, useNavigation } from 'components/hooks';
+import { useApi, useNavigation } from '@/components/hooks';
 import styles from './TestConsole.module.css';
 
-export function TestConsole({ websiteId }: { websiteId: string }) {
+export function TestConsole({ websiteId }: { websiteId?: string }) {
   const { get, useQuery } = useApi();
   const { data, isLoading, error } = useQuery({
     queryKey: ['websites:me'],
@@ -21,8 +22,12 @@ export function TestConsole({ websiteId }: { websiteId: string }) {
     router.push(`/console/${value}`);
   }
 
-  function handleClick() {
-    window['umami'].track({ url: '/page-view', referrer: 'https://www.google.com' });
+  function handleRunScript() {
+    window['umami'].track(props => ({
+      ...props,
+      url: '/page-view',
+      referrer: 'https://www.google.com',
+    }));
     window['umami'].track('track-event-no-data');
     window['umami'].track('track-event-with-data', {
       test: 'test-data',
@@ -44,7 +49,47 @@ export function TestConsole({ websiteId }: { websiteId: string }) {
     });
   }
 
-  function handleIdentifyClick() {
+  function handleRunRevenue() {
+    window['umami'].track(props => ({
+      ...props,
+      url: '/checkout-cart',
+      referrer: 'https://www.google.com',
+    }));
+    window['umami'].track('checkout-cart', {
+      revenue: parseFloat((Math.random() * 1000).toFixed(2)),
+      currency: 'USD',
+    });
+    window['umami'].track('affiliate-link', {
+      revenue: parseFloat((Math.random() * 1000).toFixed(2)),
+      currency: 'USD',
+    });
+    window['umami'].track('promotion-link', {
+      revenue: parseFloat((Math.random() * 1000).toFixed(2)),
+      currency: 'USD',
+    });
+    window['umami'].track('checkout-cart', {
+      revenue: parseFloat((Math.random() * 1000).toFixed(2)),
+      currency: 'EUR',
+    });
+    window['umami'].track('promotion-link', {
+      revenue: parseFloat((Math.random() * 1000).toFixed(2)),
+      currency: 'EUR',
+    });
+    window['umami'].track('affiliate-link', {
+      item1: {
+        productIdentity: 'ABC424',
+        revenue: parseFloat((Math.random() * 10000).toFixed(2)),
+        currency: 'JPY',
+      },
+      item2: {
+        productIdentity: 'ZYW684',
+        revenue: parseFloat((Math.random() * 10000).toFixed(2)),
+        currency: 'JPY',
+      },
+    });
+  }
+
+  function handleRunIdentify() {
     window['umami'].identify({
       userId: 123,
       name: 'brian',
@@ -124,9 +169,18 @@ export function TestConsole({ websiteId }: { websiteId: string }) {
                 Send event with data
               </Button>
               <Button
+                id="generate-revenue-button"
+                data-umami-event="checkout-cart"
+                data-umami-event-revenue={(Math.random() * 10000).toFixed(2).toString()}
+                data-umami-event-currency="USD"
+                variant="primary"
+              >
+                Generate revenue data
+              </Button>
+              <Button
                 id="button-with-div-button"
                 data-umami-event="button-click"
-                data-umami-event-name="bob"
+                data-umami-event-name={'bob'}
                 data-umami-event-id="123"
                 variant="primary"
               >
@@ -145,11 +199,14 @@ export function TestConsole({ websiteId }: { websiteId: string }) {
             </div>
             <div className={styles.group}>
               <div className={styles.header}>Javascript events</div>
-              <Button id="manual-button" variant="primary" onClick={handleClick}>
+              <Button id="manual-button" variant="primary" onClick={handleRunScript}>
                 Run script
               </Button>
-              <Button id="manual-button" variant="primary" onClick={handleIdentifyClick}>
+              <Button id="manual-button" variant="primary" onClick={handleRunIdentify}>
                 Run identify
+              </Button>
+              <Button id="manual-button" variant="primary" onClick={handleRunRevenue}>
+                Revenue script
               </Button>
             </div>
           </div>

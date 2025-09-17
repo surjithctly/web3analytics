@@ -1,8 +1,8 @@
-import { WebsiteContext } from 'app/(main)/websites/[websiteId]/WebsiteProvider';
-import FilterButtons from 'components/common/FilterButtons';
-import FilterLink from 'components/common/FilterLink';
-import { useMessages, useNavigation } from 'components/hooks';
-import { emptyFilter } from 'lib/filters';
+import { WebsiteContext } from '@/app/(main)/websites/[websiteId]/WebsiteProvider';
+import FilterButtons from '@/components/common/FilterButtons';
+import FilterLink from '@/components/common/FilterLink';
+import { useMessages, useNavigation } from '@/components/hooks';
+import { emptyFilter } from '@/lib/filters';
 import { useContext } from 'react';
 import MetricsTable, { MetricsTableProps } from './MetricsTable';
 
@@ -25,7 +25,7 @@ export function PagesTable({ allowFilter, ...props }: PagesTableProps) {
 
   const buttons = [
     {
-      label: 'URL',
+      label: formatMessage(labels.path),
       key: 'url',
     },
     {
@@ -62,7 +62,7 @@ export function PagesTable({ allowFilter, ...props }: PagesTableProps) {
       {...props}
       title={formatMessage(labels.pages)}
       type={view}
-      metric={formatMessage(labels.views)}
+      metric={formatMessage(labels.visitors)}
       dataFilter={emptyFilter}
       renderLabel={renderLink}
     >

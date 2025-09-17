@@ -1,14 +1,22 @@
 import { Metadata } from 'next';
 import Providers from './Providers';
+import '@fontsource/inter/300.css';
 import '@fontsource/inter/400.css';
+import '@fontsource/inter/500.css';
 import '@fontsource/inter/700.css';
-import '@fontsource/inter/800.css';
 import 'react-basics/dist/styles.css';
-import 'styles/locale.css';
-import 'styles/index.css';
-import 'styles/variables.css';
+import '@/styles/index.css';
+import '@/styles/variables.css';
 
 export default function ({ children }) {
+  if (process.env.DISABLE_UI) {
+    return (
+      <html>
+        <body></body>
+      </html>
+    );
+  }
+
   return (
     <html lang="en" data-scroll="0">
       <head>
@@ -21,10 +29,9 @@ export default function ({ children }) {
         <meta name="msapplication-TileColor" content="#da532c" />
         <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)" />
         <meta name="theme-color" content="#2f2f2f" media="(prefers-color-scheme: dark)" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="robots" content="noindex,nofollow" />
       </head>
-      <body>
+      <body suppressHydrationWarning>
         <Providers>{children}</Providers>
       </body>
     </html>

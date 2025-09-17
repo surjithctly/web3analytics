@@ -1,14 +1,15 @@
-import classNames from 'classnames';
-import { useDateRange, useMessages, useSticky } from 'components/hooks';
-import WebsiteDateFilter from 'components/input/WebsiteDateFilter';
-import MetricCard from 'components/metrics/MetricCard';
-import MetricsBar from 'components/metrics/MetricsBar';
-import { formatShortTime, formatLongNumber } from 'lib/format';
-import WebsiteFilterButton from './WebsiteFilterButton';
-import useWebsiteStats from 'components/hooks/queries/useWebsiteStats';
-import styles from './WebsiteMetricsBar.module.css';
 import { Dropdown, Item } from 'react-basics';
-import useStore, { setWebsiteDateCompare } from 'store/websites';
+import classNames from 'classnames';
+import { useDateRange, useMessages, useNavigation, useSticky } from '@/components/hooks';
+import WebsiteDateFilter from '@/components/input/WebsiteDateFilter';
+import MetricCard from '@/components/metrics/MetricCard';
+import MetricsBar from '@/components/metrics/MetricsBar';
+import { formatShortTime, formatLongNumber } from '@/lib/format';
+import useWebsiteStats from '@/components/hooks/queries/useWebsiteStats';
+import useStore, { setWebsiteDateCompare } from '@/store/websites';
+import WebsiteFilterButton from './WebsiteFilterButton';
+import { ExportButton } from '@/components/input/ExportButton';
+import styles from './WebsiteMetricsBar.module.css';
 
 export function WebsiteMetricsBar({
   websiteId,
@@ -31,6 +32,9 @@ export function WebsiteMetricsBar({
     websiteId,
     compareMode && dateCompare,
   );
+  const {
+    query: { view },
+  } = useNavigation();
   const isAllTime = dateRange.value === 'all';
 
   const { pageviews, visitors, visits, bounces, totaltime } = data || {};
@@ -109,7 +113,10 @@ export function WebsiteMetricsBar({
         </MetricsBar>
       </div>
       <div className={styles.actions}>
-        {showFilter && <WebsiteFilterButton websiteId={websiteId} />}
+        <div>
+          {showFilter && <WebsiteFilterButton websiteId={websiteId} />}
+          {!view && <ExportButton websiteId={websiteId} />}
+        </div>
         <WebsiteDateFilter websiteId={websiteId} showAllTime={!compareMode} />
         {compareMode && (
           <div className={styles.vs}>

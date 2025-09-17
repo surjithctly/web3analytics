@@ -1,14 +1,14 @@
 'use client';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useApi } from 'components/hooks';
-import { setUser } from 'store/app';
-import { removeClientAuthToken } from 'lib/client';
+import { useApi } from '@/components/hooks';
+import { setUser } from '@/store/app';
+import { removeClientAuthToken } from '@/lib/client';
 
 export function LogoutPage() {
-  const disabled = !!(process.env.disableLogin || process.env.cloudMode);
   const router = useRouter();
   const { post } = useApi();
+  const disabled = process.env.cloudMode;
 
   useEffect(() => {
     async function logout() {

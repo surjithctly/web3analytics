@@ -1,17 +1,20 @@
-import { useMemo } from 'react';
-import { useTheme } from 'components/hooks';
-import Chart, { ChartProps } from 'components/charts/Chart';
-import { renderNumberLabels } from 'lib/charts';
-import { useState } from 'react';
-import BarChartTooltip from 'components/charts/BarChartTooltip';
+import BarChartTooltip from '@/components/charts/BarChartTooltip';
+import Chart, { ChartProps } from '@/components/charts/Chart';
+import { useTheme } from '@/components/hooks';
+import { renderNumberLabels } from '@/lib/charts';
+import { useMemo, useState } from 'react';
 
 export interface BarChartProps extends ChartProps {
   unit: string;
   stacked?: boolean;
+  currency?: string;
   renderXLabel?: (label: string, index: number, values: any[]) => string;
   renderYLabel?: (label: string, index: number, values: any[]) => string;
   XAxisType?: string;
   YAxisType?: string;
+  minDate?: number | string;
+  maxDate?: number | string;
+  isAllTime?: boolean;
 }
 
 export function BarChart(props: BarChartProps) {
@@ -24,6 +27,10 @@ export function BarChart(props: BarChartProps) {
     XAxisType = 'time',
     YAxisType = 'linear',
     stacked = false,
+    minDate,
+    maxDate,
+    currency,
+    isAllTime,
   } = props;
 
   const options: any = useMemo(() => {
@@ -32,6 +39,8 @@ export function BarChart(props: BarChartProps) {
         x: {
           type: XAxisType,
           stacked: true,
+          min: isAllTime ? '' : minDate,
+          max: maxDate,
           time: {
             unit,
           },
@@ -71,7 +80,9 @@ export function BarChart(props: BarChartProps) {
   const handleTooltip = ({ tooltip }: { tooltip: any }) => {
     const { opacity } = tooltip;
 
-    setTooltip(opacity ? <BarChartTooltip tooltip={tooltip} unit={unit} /> : null);
+    setTooltip(
+      opacity ? <BarChartTooltip tooltip={tooltip} unit={unit} currency={currency} /> : null,
+    );
   };
 
   return (

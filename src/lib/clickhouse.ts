@@ -1,14 +1,16 @@
 import { ClickHouseClient, createClient } from '@clickhouse/client';
-import dateFormat from 'dateformat';
+import { formatInTimeZone } from 'date-fns-tz';
 import debug from 'debug';
-import { CLICKHOUSE } from 'lib/db';
-import { QueryFilters, QueryOptions } from './types';
-import { OPERATORS } from './constants';
-import { fetchWebsite } from './load';
+import { CLICKHOUSE } from '@/lib/db';
+import { getWebsite } from '@/queries';
+import { DEFAULT_PAGE_SIZE, OPERATORS } from './constants';
 import { maxDate } from './date';
 import { filtersToArray } from './params';
+import { PageParams, QueryFilters, QueryOptions } from './types';
 
 export const CLICKHOUSE_DATE_FORMATS = {
+  utc: '%Y-%m-%dT%H:%i:%SZ',
+  second: '%Y-%m-%d %H:%i:%S',
   minute: '%Y-%m-%d %H:%i:00',
   hour: '%Y-%m-%d %H:00:00',
   day: '%Y-%m-%d',
@@ -32,7 +34,7 @@ function getClient() {
   } = new URL(process.env.CLICKHOUSE_URL);
 
   const client = createClient({
-    host: `${protocol}//${hostname}:${port}`,
+    url: `${protocol}//${hostname}:${port}`,
     database: pathname.replace('/', ''),
     username: username,
     password,
@@ -47,19 +49,27 @@ function getClient() {
   return client;
 }
 
-function getDateStringQuery(data: any, unit: string | number) {
+function getUTCString(date?: Date | string | number) {
+  return formatInTimeZone(date || new Date(), 'UTC', 'yyyy-MM-dd HH:mm:ss');
+}
+
+function getDateStringSQL(data: any, unit: string = 'utc', timezone?: string) {
+  if (timezone) {
+    return `formatDateTime(${data}, '${CLICKHOUSE_DATE_FORMATS[unit]}', '${timezone}')`;
+  }
+
   return `formatDateTime(${data}, '${CLICKHOUSE_DATE_FORMATS[unit]}')`;
 }
 
-function getDateQuery(field: string, unit: string, timezone?: string) {
+function getDateSQL(field: string, unit: string, timezone?: string) {
   if (timezone) {
-    return `date_trunc('${unit}', ${field}, '${timezone}')`;
+    return `toDateTime(date_trunc('${unit}', ${field}, '${timezone}'), '${timezone}')`;
   }
-  return `date_trunc('${unit}', ${field})`;
+  return `toDateTime(date_trunc('${unit}', ${field}))`;
 }
 
-function getDateFormat(date: Date) {
-  return `'${dateFormat(date, 'UTC:yyyy-mm-dd HH:MM:ss')}'`;
+function getSearchSQL(column: string, param: string = 'search'): string {
+  return `and positionCaseInsensitive(${column}, {${param}:String}) > 0`;
 }
 
 function mapFilter(column: string, operator: string, name: string, type: string = 'String') {
@@ -79,13 +89,28 @@ function mapFilter(column: string, operator: string, name: string, type: string 
   }
 }
 
+function mapCohortFilter(column: string, operator: string, value: string) {
+  switch (operator) {
+    case OPERATORS.equals:
+      return `${column} = '${value}'`;
+    case OPERATORS.notEquals:
+      return `${column} != '${value}'`;
+    case OPERATORS.contains:
+      return `positionCaseInsensitive(${column}, '${value}') > 0`;
+    case OPERATORS.doesNotContain:
+      return `positionCaseInsensitive(${column}, '${value}') = 0`;
+    default:
+      return '';
+  }
+}
+
 function getFilterQuery(filters: QueryFilters = {}, options: QueryOptions = {}) {
   const query = filtersToArray(filters, options).reduce((arr, { name, column, operator }) => {
     if (column) {
       arr.push(`and ${mapFilter(column, operator, name)}`);
 
       if (name === 'referrer') {
-        arr.push('and referrer_domain != {websiteDomain:String}');
+        arr.push(`and referrer_domain != hostname`);
       }
     }
 
@@ -93,6 +118,62 @@ function getFilterQuery(filters: QueryFilters = {}, options: QueryOptions = {}) 
   }, []);
 
   return query.join('\n');
+}
+
+function getCohortQuery(websiteId: string, filters: QueryFilters = {}, options: QueryOptions = {}) {
+  const query = filtersToArray(filters, options).reduce(
+    (arr, { name, column, operator, value }) => {
+      if (column) {
+        arr.push(
+          `${arr.length === 0 ? 'where' : 'and'} ${mapCohortFilter(column, operator, value)}`,
+        );
+
+        if (name === 'referrer') {
+          arr.push(`and referrer_domain != hostname`);
+        }
+      }
+
+      return arr;
+    },
+    [],
+  );
+
+  if (query.length > 0) {
+    // add website and date range filters
+    query.push(`and website_id = '${websiteId}'`);
+    query.push(
+      `and created_at between parseDateTimeBestEffort('${filters.startDate}') and parseDateTimeBestEffort('${filters.endDate}')`,
+    );
+
+    return `join
+    (select distinct session_id
+    from website_event
+    ${query.join('\n')}) cohort
+    on cohort.session_id = website_event.session_id
+    `;
+  }
+
+  return '';
+}
+
+function getDateQuery(filters: QueryFilters = {}) {
+  const { startDate, endDate, timezone } = filters;
+
+  if (startDate) {
+    if (endDate) {
+      if (timezone) {
+        return `and created_at between toTimezone({startDate:DateTime64},{timezone:String}) and toTimezone({endDate:DateTime64},{timezone:String})`;
+      }
+      return `and created_at between {startDate:DateTime64} and {endDate:DateTime64}`;
+    } else {
+      if (timezone) {
+        return `and created_at >= toTimezone({startDate:DateTime64},{timezone:String})`;
+      }
+      return `and created_at >= {startDate:DateTime64}`;
+    }
+  }
+
+  return '';
 }
 
 function getFilterParams(filters: QueryFilters = {}) {
@@ -106,17 +187,44 @@ function getFilterParams(filters: QueryFilters = {}) {
 }
 
 async function parseFilters(websiteId: string, filters: QueryFilters = {}, options?: QueryOptions) {
-  const website = await fetchWebsite(websiteId);
+  const website = await getWebsite(websiteId);
 
   return {
     filterQuery: getFilterQuery(filters, options),
+    dateQuery: getDateQuery(filters),
     params: {
       ...getFilterParams(filters),
       websiteId,
       startDate: maxDate(filters.startDate, new Date(website?.resetAt)),
-      websiteDomain: website.domain,
     },
+    cohortQuery: getCohortQuery(websiteId, filters?.cohort),
   };
+}
+
+async function pagedQuery(
+  query: string,
+  queryParams: { [key: string]: any },
+  pageParams: PageParams = {},
+) {
+  const { page = 1, pageSize, orderBy, sortDescending = false } = pageParams;
+  const size = +pageSize || DEFAULT_PAGE_SIZE;
+  const offset = +size * (+page - 1);
+  const direction = sortDescending ? 'desc' : 'asc';
+
+  const statements = [
+    orderBy && `order by ${orderBy} ${direction}`,
+    +size > 0 && `limit ${+size} offset ${+offset}`,
+  ]
+    .filter(n => n)
+    .join('\n');
+
+  const count = await rawQuery(`select count(*) as num from (${query}) t`, queryParams).then(
+    res => res[0].num,
+  );
+
+  const data = await rawQuery(`${query}${statements}`, queryParams);
+
+  return { data, count, page: +page, pageSize: size, orderBy };
 }
 
 async function rawQuery<T = unknown>(
@@ -134,9 +242,19 @@ async function rawQuery<T = unknown>(
     query: query,
     query_params: params,
     format: 'JSONEachRow',
+    clickhouse_settings: {
+      date_time_output_format: 'iso',
+      output_format_json_quote_64bit_integers: 0,
+    },
   });
 
-  return resultSet.json();
+  return (await resultSet.json()) as T;
+}
+
+async function insert(table: string, values: any[]) {
+  await connect();
+
+  return clickhouse.insert({ table, values, format: 'JSONEachRow' });
 }
 
 async function findUnique(data: any[]) {
@@ -164,12 +282,15 @@ export default {
   client: clickhouse,
   log,
   connect,
-  getDateStringQuery,
-  getDateQuery,
-  getDateFormat,
+  getDateStringSQL,
+  getDateSQL,
+  getSearchSQL,
   getFilterQuery,
+  getUTCString,
   parseFilters,
+  pagedQuery,
   findUnique,
   findFirst,
   rawQuery,
+  insert,
 };

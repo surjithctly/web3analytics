@@ -1,9 +1,9 @@
 import { useContext } from 'react';
 import classNames from 'classnames';
 import { ReportContext } from '../[reportId]/Report';
-import EmptyPlaceholder from 'components/common/EmptyPlaceholder';
-import { useMessages, useLocale } from 'components/hooks';
-import { formatDate } from 'lib/date';
+import EmptyPlaceholder from '@/components/common/EmptyPlaceholder';
+import { useMessages, useLocale } from '@/components/hooks';
+import { formatDate } from '@/lib/date';
 import styles from './RetentionTable.module.css';
 
 const DAYS = [1, 2, 3, 4, 5, 6, 7, 14, 21, 28];
@@ -52,19 +52,19 @@ export function RetentionTable({ days = DAYS }) {
         {rows.map(({ date, visitors, records }, rowIndex) => {
           return (
             <div key={rowIndex} className={styles.row}>
-              <div className={styles.date}>{formatDate(`${date} 00:00:00`, 'PP', locale)}</div>
+              <div className={styles.date}>{formatDate(date, 'PP', locale)}</div>
               <div className={styles.visitors}>{visitors}</div>
               {days.map(day => {
                 if (totalDays - rowIndex < day) {
                   return null;
                 }
-                const percentage = records[day]?.percentage;
+                const percentage = records.filter(a => a.day === day)[0]?.percentage;
                 return (
                   <div
                     key={day}
                     className={classNames(styles.cell, { [styles.empty]: !percentage })}
                   >
-                    {percentage ? `${percentage.toFixed(2)}%` : ''}
+                    {percentage ? `${Number(percentage).toFixed(2)}%` : ''}
                   </div>
                 );
               })}

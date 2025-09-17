@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://umami.is/images/umami-logo.png" alt="Umami Logo" width="100">
+  <img src="https://content.umami.is/website/images/umami-logo.png" alt="Umami Logo" width="100">
 </p>
 
 <h1 align="center">Umami</h1>
@@ -35,21 +35,15 @@ A detailed getting started guide can be found at [umami.is/docs](https://umami.i
 
 ### Requirements
 
-- A server with Node.js version 16.13 or newer
-- A database. Umami supports [MySQL](https://www.mysql.com/) (minimum v8.0) and [PostgreSQL](https://www.postgresql.org/) (minimum v12.14) databases.
-
-### Install Yarn
-
-```bash
-npm install -g yarn
-```
+- A server with Node.js version 18.18 or newer
+- A database. Umami supports [MariaDB](https://www.mariadb.org/) (minimum v10.5), [MySQL](https://www.mysql.com/) (minimum v8.0) and [PostgreSQL](https://www.postgresql.org/) (minimum v12.14) databases.
 
 ### Get the Source Code and Install Packages
 
 ```bash
 git clone https://github.com/umami-software/umami.git
 cd umami
-yarn install
+pnpm install
 ```
 
 ### Configure Umami
@@ -70,18 +64,18 @@ mysql://username:mypassword@localhost:3306/mydb
 ### Build the Application
 
 ```bash
-yarn build
+pnpm run build
 ```
 
-*The build step will create tables in your database if you are installing for the first time. It will also create a login user with username **admin** and password **umami**.*
+_The build step will create tables in your database if you are installing for the first time. It will also create a login user with username **admin** and password **umami**._
 
 ### Start the Application
 
 ```bash
-yarn start
+pnpm run start
 ```
 
-*By default, this will launch the application on `http://localhost:3000`. You will need to either [proxy](https://docs.nginx.com/nginx/admin-guide/web-server/reverse-proxy/) requests from your web server or change the [port](https://nextjs.org/docs/api-reference/cli#production) to serve the application directly.*
+_By default, this will launch the application on `http://localhost:3000`. You will need to either [proxy](https://docs.nginx.com/nginx/admin-guide/web-server/reverse-proxy/) requests from your web server or change the [port](https://nextjs.org/docs/api-reference/cli#production) to serve the application directly._
 
 ---
 
@@ -113,15 +107,15 @@ To get the latest features, simply do a pull, install any new dependencies, and 
 
 ```bash
 git pull
-yarn install
-yarn build
+pnpm install
+pnpm run build
 ```
 
 To update the Docker image, simply pull the new images and rebuild:
 
 ```bash
 docker compose pull
-docker compose up --force-recreate
+docker compose up --force-recreate -d
 ```
 
 ---

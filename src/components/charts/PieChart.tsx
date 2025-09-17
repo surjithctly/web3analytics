@@ -1,7 +1,7 @@
-import { Chart, ChartProps } from 'components/charts/Chart';
+import { Chart, ChartProps } from '@/components/charts/Chart';
 import { useState } from 'react';
 import { StatusLight } from 'react-basics';
-import { formatLongNumber } from 'lib/format';
+import { formatLongNumber } from '@/lib/format';
 
 export interface PieChartProps extends ChartProps {
   type?: 'doughnut' | 'pie';
@@ -9,7 +9,7 @@ export interface PieChartProps extends ChartProps {
 
 export default function PieChart(props: PieChartProps) {
   const [tooltip, setTooltip] = useState(null);
-  const { type } = props;
+  const { type = 'pie' } = props;
 
   const handleTooltip = ({ tooltip }) => {
     const { labelColors, dataPoints } = tooltip;
@@ -23,5 +23,5 @@ export default function PieChart(props: PieChartProps) {
     );
   };
 
-  return <Chart {...props} type={type || 'pie'} tooltip={tooltip} onTooltip={handleTooltip} />;
+  return <Chart {...props} type={type} tooltip={tooltip} onTooltip={handleTooltip} />;
 }

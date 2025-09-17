@@ -1,11 +1,11 @@
 import { useContext } from 'react';
 import { firstBy } from 'thenby';
 import { ReportContext } from '../[reportId]/Report';
-import { CHART_COLORS, UTM_PARAMS } from 'lib/constants';
-import PieChart from 'components/charts/PieChart';
-import ListTable from 'components/metrics/ListTable';
+import { CHART_COLORS, UTM_PARAMS } from '@/lib/constants';
+import PieChart from '@/components/charts/PieChart';
+import ListTable from '@/components/metrics/ListTable';
 import styles from './UTMView.module.css';
-import { useMessages } from 'components/hooks';
+import { useMessages } from '@/components/hooks';
 
 function toArray(data: { [key: string]: number } = {}) {
   return Object.keys(data)
@@ -13,6 +13,31 @@ function toArray(data: { [key: string]: number } = {}) {
       return { name: key, value: data[key] };
     })
     .sort(firstBy('value', -1));
+}
+
+function parseParameters(data: any[]) {
+  return data.reduce((obj, { url_query, num }) => {
+    try {
+      const searchParams = new URLSearchParams(url_query);
+
+      for (const [key, value] of searchParams) {
+        if (key.match(/^utm_(\w+)$/)) {
+          const name = value;
+          if (!obj[key]) {
+            obj[key] = { [name]: Number(num) };
+          } else if (!obj[key][name]) {
+            obj[key][name] = Number(num);
+          } else {
+            obj[key][name] += Number(num);
+          }
+        }
+      }
+    } catch {
+      // Ignore
+    }
+
+    return obj;
+  }, {});
 }
 
 export default function UTMView() {
@@ -27,7 +52,7 @@ export default function UTMView() {
   return (
     <div>
       {UTM_PARAMS.map(param => {
-        const items = toArray(data[param]);
+        const items = toArray(parseParameters(data)[param]);
         const chartData = {
           labels: items.map(({ name }) => name),
           datasets: [

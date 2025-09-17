@@ -1,4 +1,3 @@
-import { NextApiRequest } from 'next';
 import {
   COLLECTION_TYPE,
   DATA_TYPE,
@@ -8,7 +7,6 @@ import {
   REPORT_TYPES,
   ROLES,
 } from './constants';
-import * as yup from 'yup';
 import { TIME_UNIT } from './date';
 import { Dispatch, SetStateAction } from 'react';
 
@@ -25,9 +23,9 @@ export type KafkaTopic = ObjectValues<typeof KAFKA_TOPIC>;
 export type ReportType = ObjectValues<typeof REPORT_TYPES>;
 
 export interface PageParams {
-  query?: string;
-  page?: number;
-  pageSize?: number;
+  search?: string;
+  page?: string | number;
+  pageSize?: string;
   orderBy?: string;
   sortDescending?: boolean;
 }
@@ -41,7 +39,7 @@ export interface PageResult<T> {
   sortDescending?: boolean;
 }
 
-export interface FilterQueryResult<T> {
+export interface PagedQueryResult<T> {
   result: PageResult<T>;
   query: any;
   params: PageParams;
@@ -63,26 +61,6 @@ export interface Auth {
   shareToken?: {
     websiteId: string;
   };
-}
-
-export interface YupRequest {
-  GET?: yup.ObjectSchema<any>;
-  POST?: yup.ObjectSchema<any>;
-  PUT?: yup.ObjectSchema<any>;
-  DELETE?: yup.ObjectSchema<any>;
-}
-
-export interface NextApiRequestQueryBody<TQuery = any, TBody = any> extends NextApiRequest {
-  auth?: Auth;
-  query: TQuery & { [key: string]: string | string[] };
-  body: TBody;
-  headers: any;
-  yup: YupRequest;
-}
-
-export interface NextApiRequestAuth extends NextApiRequest {
-  auth?: Auth;
-  headers: any;
 }
 
 export interface User {
@@ -125,9 +103,9 @@ export interface WebsiteEventMetric {
 
 export interface WebsiteEventData {
   eventName?: string;
-  fieldName: string;
+  propertyName: string;
   dataType: number;
-  fieldValue?: string;
+  propertyValue?: string;
   total: number;
 }
 
@@ -143,10 +121,11 @@ export interface WebsitePageviews {
 }
 
 export interface WebsiteStats {
-  pageviews: { value: number; change: number };
-  uniques: { value: number; change: number };
-  bounces: { value: number; change: number };
-  totalTime: { value: number; change: number };
+  pageviews: { value: number; prev: number };
+  visitors: { value: number; prev: number };
+  visits: { value: number; prev: number };
+  bounces: { value: number; prev: number };
+  totaltime: { value: number; prev: number };
 }
 
 export interface DateRange {
@@ -178,6 +157,8 @@ export interface QueryFilters {
   language?: string;
   event?: string;
   search?: string;
+  tag?: string;
+  cohort?: { [key: string]: string };
 }
 
 export interface QueryOptions {
@@ -217,7 +198,8 @@ export interface SessionData {
   screen: string;
   language: string;
   country: string;
-  subdivision1: string;
-  subdivision2: string;
+  region: string;
   city: string;
+  ip?: string;
+  userAgent?: string;
 }

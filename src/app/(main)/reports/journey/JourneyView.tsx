@@ -1,12 +1,12 @@
 import { useContext, useMemo, useState } from 'react';
-import { TooltipPopup } from 'react-basics';
+import { TextOverflow, TooltipPopup } from 'react-basics';
 import { firstBy } from 'thenby';
 import classNames from 'classnames';
-import { useEscapeKey, useMessages } from 'components/hooks';
-import { objectToArray } from 'lib/data';
+import { useEscapeKey, useMessages } from '@/components/hooks';
+import { objectToArray } from '@/lib/data';
 import { ReportContext } from '../[reportId]/Report';
 import styles from './JourneyView.module.css';
-import { formatLongNumber } from 'lib/format';
+import { formatLongNumber } from '@/lib/format';
 
 const NODE_HEIGHT = 60;
 const NODE_GAP = 10;
@@ -191,7 +191,9 @@ export default function JourneyView() {
                           })}
                           onClick={() => handleClick(name, columnIndex, paths)}
                         >
-                          <div className={styles.name}>{name}</div>
+                          <div className={styles.name} title={name}>
+                            <TextOverflow> {name}</TextOverflow>
+                          </div>
                           <TooltipPopup label={dropOffPercent} disabled={!selected}>
                             <div className={styles.count} title={nodeCount}>
                               {formatLongNumber(nodeCount)}

@@ -1,7 +1,7 @@
 import classNames from 'classnames';
 import { useSpring, animated } from '@react-spring/web';
-import { formatNumber } from 'lib/format';
-import ChangeLabel from 'components/metrics/ChangeLabel';
+import { formatNumber } from '@/lib/format';
+import ChangeLabel from '@/components/metrics/ChangeLabel';
 import styles from './MetricCard.module.css';
 
 export interface MetricCardProps {
@@ -10,7 +10,7 @@ export interface MetricCardProps {
   change?: number;
   label?: string;
   reverseColors?: boolean;
-  formatValue?: typeof formatNumber;
+  formatValue?: (n: any) => string;
   showLabel?: boolean;
   showChange?: boolean;
   showPrevious?: boolean;
@@ -37,7 +37,7 @@ export const MetricCard = ({
   return (
     <div className={classNames(styles.card, className, showPrevious && styles.compare)}>
       {showLabel && <div className={styles.label}>{label}</div>}
-      <animated.div className={styles.value} title={value.toString()}>
+      <animated.div className={styles.value} title={value?.toString()}>
         {props?.x?.to(x => formatValue(x))}
       </animated.div>
       {showChange && (

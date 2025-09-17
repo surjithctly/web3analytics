@@ -1,16 +1,18 @@
 (window => {
   const {
     screen: { width, height },
-    navigator: { language },
+    navigator: { language, doNotTrack: ndnt, msDoNotTrack: msdnt },
     location,
-    localStorage,
     document,
     history,
+    top,
+    doNotTrack,
   } = window;
-  const { hostname, href } = location;
   const { currentScript, referrer } = document;
-
   if (!currentScript) return;
+
+  const { hostname, href, origin } = location;
+  const localStorage = href.startsWith('data:') ? undefined : window.localStorage;
 
   const _data = 'data-';
   const _false = 'false';
@@ -18,9 +20,12 @@
   const attr = currentScript.getAttribute.bind(currentScript);
   const website = attr(_data + 'website-id');
   const hostUrl = attr(_data + 'host-url');
-  const tag = attr(_data + 'tag');
+  const beforeSend = attr(_data + 'before-send');
+  const tag = attr(_data + 'tag') || undefined;
   const autoTrack = attr(_data + 'auto-track') !== _false;
+  const dnt = attr(_data + 'do-not-track') === _true;
   const excludeSearch = attr(_data + 'exclude-search') === _true;
+  const excludeHash = attr(_data + 'exclude-hash') === _true;
   const domain = attr(_data + 'domains') || '';
   const domains = domain.split(',').map(n => n.trim());
   const host =
@@ -33,52 +38,42 @@
 
   /* Helper functions */
 
-  const encode = str => {
-    if (!str) {
-      return undefined;
-    }
-
+  const normalize = raw => {
+    if (!raw) return raw;
     try {
-      const result = decodeURI(str);
-
-      if (result !== str) {
-        return result;
-      }
-    } catch {
-      return str;
+      const u = new URL(raw, location.href);
+      if (excludeSearch) u.search = '';
+      if (excludeHash) u.hash = '';
+      return u.toString();
+    } catch (e) {
+      return raw;
     }
-
-    return encodeURI(str);
-  };
-
-  const parseURL = url => {
-    try {
-      const { pathname, search } = new URL(url);
-      url = pathname + search;
-    } catch {
-      /* empty */
-    }
-    return excludeSearch ? url.split('?')[0] : url;
   };
 
   const getPayload = () => ({
     website,
-    hostname,
     screen,
     language,
-    title: encode(title),
-    url: encode(currentUrl),
-    referrer: encode(currentRef),
-    tag: tag ? tag : undefined,
+    title: document.title,
+    hostname,
+    url: currentUrl,
+    referrer: currentRef,
+    tag,
+    id: identity ? identity : undefined,
   });
+
+  const hasDoNotTrack = () => {
+    const dnt = doNotTrack || ndnt || msdnt;
+    return dnt === 1 || dnt === '1' || dnt === 'yes';
+  };
 
   /* Event handlers */
 
-  const handlePush = (state, title, url) => {
+  const handlePush = (_state, _title, url) => {
     if (!url) return;
 
     currentRef = currentUrl;
-    currentUrl = parseURL(url.toString());
+    currentUrl = normalize(new URL(url, location.href).toString());
 
     if (currentUrl !== currentRef) {
       setTimeout(track, delayDuration);
@@ -88,10 +83,8 @@
   const handlePathChanges = () => {
     const hook = (_this, method, callback) => {
       const orig = _this[method];
-
       return (...args) => {
         callback.apply(null, args);
-
         return orig.apply(_this, args);
       };
     };
@@ -100,144 +93,121 @@
     history.replaceState = hook(history, 'replaceState', handlePush);
   };
 
-  const handleTitleChanges = () => {
-    const observer = new MutationObserver(([entry]) => {
-      title = entry && entry.target ? entry.target.text : undefined;
-    });
-
-    const node = document.querySelector('head > title');
-
-    if (node) {
-      observer.observe(node, {
-        subtree: true,
-        characterData: true,
-        childList: true,
-      });
-    }
-  };
-
   const handleClicks = () => {
-    document.addEventListener(
-      'click',
-      async e => {
-        const isSpecialTag = tagName => ['BUTTON', 'A'].includes(tagName);
+    const trackElement = async el => {
+      const eventName = el.getAttribute(eventNameAttribute);
+      if (eventName) {
+        const eventData = {};
 
-        const trackElement = async el => {
-          const attr = el.getAttribute.bind(el);
-          const eventName = attr(eventNameAttribute);
+        el.getAttributeNames().forEach(name => {
+          const match = name.match(eventRegex);
+          if (match) eventData[match[1]] = el.getAttribute(name);
+        });
 
-          if (eventName) {
-            const eventData = {};
+        return track(eventName, eventData);
+      }
+    };
+    const onClick = async e => {
+      const el = e.target;
+      const parentElement = el.closest('a,button');
+      if (!parentElement) return trackElement(el);
 
-            el.getAttributeNames().forEach(name => {
-              const match = name.match(eventRegex);
+      const { href, target } = parentElement;
+      if (!parentElement.getAttribute(eventNameAttribute)) return;
 
-              if (match) {
-                eventData[match[1]] = attr(name);
-              }
-            });
-
-            return track(eventName, eventData);
+      if (parentElement.tagName === 'BUTTON') {
+        return trackElement(parentElement);
+      }
+      if (parentElement.tagName === 'A' && href) {
+        const external =
+          target === '_blank' ||
+          e.ctrlKey ||
+          e.shiftKey ||
+          e.metaKey ||
+          (e.button && e.button === 1);
+        if (!external) e.preventDefault();
+        return trackElement(parentElement).then(() => {
+          if (!external) {
+            (target === '_top' ? top.location : location).href = href;
           }
-        };
-
-        const findParentTag = (rootElem, maxSearchDepth) => {
-          let currentElement = rootElem;
-          for (let i = 0; i < maxSearchDepth; i++) {
-            if (isSpecialTag(currentElement.tagName)) {
-              return currentElement;
-            }
-            currentElement = currentElement.parentElement;
-            if (!currentElement) {
-              return null;
-            }
-          }
-        };
-
-        const el = e.target;
-        const parentElement = isSpecialTag(el.tagName) ? el : findParentTag(el, 10);
-
-        if (parentElement) {
-          const { href, target } = parentElement;
-          const eventName = parentElement.getAttribute(eventNameAttribute);
-
-          if (eventName) {
-            if (parentElement.tagName === 'A') {
-              const external =
-                target === '_blank' ||
-                e.ctrlKey ||
-                e.shiftKey ||
-                e.metaKey ||
-                (e.button && e.button === 1);
-
-              if (eventName && href) {
-                if (!external) {
-                  e.preventDefault();
-                }
-                return trackElement(parentElement).then(() => {
-                  if (!external) location.href = href;
-                });
-              }
-            } else if (parentElement.tagName === 'BUTTON') {
-              return trackElement(parentElement);
-            }
-          }
-        } else {
-          return trackElement(el);
-        }
-      },
-      true,
-    );
+        });
+      }
+    };
+    document.addEventListener('click', onClick, true);
   };
 
   /* Tracking functions */
 
   const trackingDisabled = () =>
+    disabled ||
     !website ||
     (localStorage && localStorage.getItem('umami.disabled')) ||
-    (domain && !domains.includes(hostname));
+    (domain && !domains.includes(hostname)) ||
+    (dnt && hasDoNotTrack());
 
   const send = async (payload, type = 'event') => {
     if (trackingDisabled()) return;
 
-    const headers = {
-      'Content-Type': 'application/json',
-    };
+    const callback = window[beforeSend];
 
-    if (typeof cache !== 'undefined') {
-      headers['x-umami-cache'] = cache;
+    if (typeof callback === 'function') {
+      payload = callback(type, payload);
     }
+
+    if (!payload) return;
 
     try {
       const res = await fetch(endpoint, {
+        keepalive: true,
         method: 'POST',
         body: JSON.stringify({ type, payload }),
-        headers,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(typeof cache !== 'undefined' && { 'x-umami-cache': cache }),
+        },
+        credentials: 'omit',
       });
-      const text = await res.text();
 
-      return (cache = text);
-    } catch {
-      /* empty */
+      const data = await res.json();
+      if (data) {
+        disabled = !!data.disabled;
+        cache = data.cache;
+      }
+    } catch (e) {
+      /* no-op */
     }
   };
 
-  const track = (obj, data) => {
-    if (typeof obj === 'string') {
-      return send({
-        ...getPayload(),
-        name: obj,
-        data: typeof data === 'object' ? data : undefined,
-      });
-    } else if (typeof obj === 'object') {
-      return send(obj);
-    } else if (typeof obj === 'function') {
-      return send(obj(getPayload()));
+  const init = () => {
+    if (!initialized) {
+      initialized = true;
+      track();
+      handlePathChanges();
+      handleClicks();
     }
+  };
+
+  const track = (name, data) => {
+    if (typeof name === 'string') return send({ ...getPayload(), name, data });
+    if (typeof name === 'object') return send({ ...name });
+    if (typeof name === 'function') return send(name(getPayload()));
     return send(getPayload());
   };
 
-  const identify = data => send({ ...getPayload(), data }, 'identify');
+  const identify = (id, data) => {
+    if (typeof id === 'string') {
+      identity = id;
+    }
+
+    cache = '';
+    return send(
+      {
+        ...getPayload(),
+        data: typeof id === 'object' ? id : data,
+      },
+      'identify',
+    );
+  };
 
   /* Start */
 
@@ -248,26 +218,19 @@
     };
   }
 
-  let currentUrl = parseURL(href);
-  let currentRef = referrer !== hostname ? referrer : '';
-  let title = document.title;
+  let currentUrl = normalize(href);
+  let currentRef = normalize(referrer.startsWith(origin) ? '' : referrer);
+
+  let initialized = false;
+  let disabled = false;
   let cache;
-  let initialized;
+  let identity;
 
   if (autoTrack && !trackingDisabled()) {
-    handlePathChanges();
-    handleTitleChanges();
-    handleClicks();
-
-    const init = () => {
-      if (document.readyState === 'complete' && !initialized) {
-        track();
-        initialized = true;
-      }
-    };
-
-    document.addEventListener('readystatechange', init, true);
-
-    init();
+    if (document.readyState === 'complete') {
+      init();
+    } else {
+      document.addEventListener('readystatechange', init, true);
+    }
   }
 })(window);

@@ -1,6 +1,6 @@
-import { useReports } from 'components/hooks';
+import { useReports } from '@/components/hooks';
 import ReportsTable from './ReportsTable';
-import DataTable from 'components/common/DataTable';
+import DataTable from '@/components/common/DataTable';
 import { ReactNode } from 'react';
 
 export default function ReportsDataTable({
@@ -14,12 +14,8 @@ export default function ReportsDataTable({
 }) {
   const queryResult = useReports({ websiteId, teamId });
 
-  if (queryResult?.result?.data?.length === 0) {
-    return children;
-  }
-
   return (
-    <DataTable queryResult={queryResult}>
+    <DataTable queryResult={queryResult} renderEmpty={() => children}>
       {({ data }) => <ReportsTable data={data} showDomain={!websiteId} />}
     </DataTable>
   );

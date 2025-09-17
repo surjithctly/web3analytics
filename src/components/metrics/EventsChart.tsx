@@ -1,23 +1,23 @@
-import { useMemo } from 'react';
-import { Loading } from 'react-basics';
+import { useMemo, useState, useEffect } from 'react';
 import { colord } from 'colord';
-import BarChart from 'components/charts/BarChart';
-import { getDateArray } from 'lib/date';
-import { useLocale, useDateRange, useWebsiteEvents } from 'components/hooks';
-import { CHART_COLORS } from 'lib/constants';
-import { renderDateLabels } from 'lib/charts';
+import BarChart from '@/components/charts/BarChart';
+import { useDateRange, useLocale, useWebsiteEventsSeries } from '@/components/hooks';
+import { renderDateLabels } from '@/lib/charts';
+import { CHART_COLORS } from '@/lib/constants';
 
 export interface EventsChartProps {
   websiteId: string;
   className?: string;
+  focusLabel?: string;
 }
 
-export function EventsChart({ websiteId, className }: EventsChartProps) {
+export function EventsChart({ websiteId, className, focusLabel }: EventsChartProps) {
   const {
-    dateRange: { startDate, endDate, unit },
+    dateRange: { startDate, endDate, unit, value },
   } = useDateRange(websiteId);
   const { locale } = useLocale();
-  const { data, isLoading } = useWebsiteEvents(websiteId);
+  const { data, isLoading } = useWebsiteEventsSeries(websiteId);
+  const [label, setLabel] = useState<string>(focusLabel);
 
   const chartData = useMemo(() => {
     if (!data) return [];
@@ -32,10 +32,6 @@ export function EventsChart({ websiteId, className }: EventsChartProps) {
       return obj;
     }, {});
 
-    Object.keys(map).forEach(key => {
-      map[key] = getDateArray(map[key], startDate, endDate, unit);
-    });
-
     return {
       datasets: Object.keys(map).map((key, index) => {
         const color = colord(CHART_COLORS[index % CHART_COLORS.length]);
@@ -48,21 +44,27 @@ export function EventsChart({ websiteId, className }: EventsChartProps) {
           borderWidth: 1,
         };
       }),
+      focusLabel,
     };
-  }, [data, startDate, endDate, unit]);
+  }, [data, startDate, endDate, unit, focusLabel]);
 
-  if (isLoading) {
-    return <Loading icon="dots" />;
-  }
+  useEffect(() => {
+    if (label !== focusLabel) {
+      setLabel(focusLabel);
+    }
+  }, [focusLabel]);
 
   return (
     <BarChart
+      minDate={startDate.toISOString()}
+      maxDate={endDate.toISOString()}
       className={className}
       data={chartData}
       unit={unit}
       stacked={true}
       renderXLabel={renderDateLabels(unit, locale)}
       isLoading={isLoading}
+      isAllTime={value === 'all'}
     />
   );
 }

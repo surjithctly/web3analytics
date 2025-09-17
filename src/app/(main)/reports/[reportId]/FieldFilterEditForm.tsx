@@ -1,22 +1,22 @@
-import { useState, useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { useFilters, useFormat, useMessages, useWebsiteValues } from '@/components/hooks';
+import { OPERATORS } from '@/lib/constants';
+import { isEqualsOperator } from '@/lib/params';
 import {
+  Button,
+  Dropdown,
+  Flexbox,
   Form,
   FormRow,
-  Item,
-  Flexbox,
-  Dropdown,
-  Button,
-  SearchField,
-  TextField,
-  Text,
   Icon,
   Icons,
-  Menu,
+  Item,
   Loading,
+  Menu,
+  SearchField,
+  Text,
+  TextField,
 } from 'react-basics';
-import { useMessages, useFilters, useFormat, useLocale, useWebsiteValues } from 'components/hooks';
-import { OPERATORS } from 'lib/constants';
-import { isEqualsOperator } from 'lib/params';
 import styles from './FieldFilterEditForm.module.css';
 
 export interface FieldFilterFormProps {
@@ -55,7 +55,6 @@ export default function FieldFilterEditForm({
   const [selected, setSelected] = useState(isEquals ? value : '');
   const { filters } = useFilters();
   const { formatValue } = useFormat();
-  const { locale } = useLocale();
   const isDisabled = !operator || (isEquals && !selected) || (!isEquals && !value);
   const {
     data: values = [],
@@ -69,30 +68,28 @@ export default function FieldFilterEditForm({
     search,
   });
 
-  const formattedValues = useMemo(() => {
-    if (!values) {
-      return {};
-    }
-    const formatted = {};
-    const format = (val: string) => {
-      formatted[val] = formatValue(val, name);
-      return formatted[val];
-    };
+  const filterDropdownItems = (name: string) => {
+    const limitedFilters = ['country', 'region', 'city'];
 
-    if (values?.length !== 1) {
-      const { compare } = new Intl.Collator(locale, { numeric: true });
-      values.sort((a, b) => compare(formatted[a] ?? format(a), formatted[b] ?? format(b)));
+    if (limitedFilters.includes(name)) {
+      return filters.filter(f => f.type === type && !f.label.match(/contain/gi));
     } else {
-      format(values[0]);
+      return filters.filter(f => f.type === type);
     }
+  };
 
-    return formatted;
-  }, [formatValue, locale, name, values]);
+  const formattedValues = useMemo(() => {
+    return values.reduce((obj: { [x: string]: string }, { value }: { value: string }) => {
+      obj[value] = formatValue(value, name);
+
+      return obj;
+    }, {});
+  }, [formatValue, name, values]);
 
   const filteredValues = useMemo(() => {
     return value
       ? values.filter((n: string | number) =>
-          formattedValues[n].toLowerCase().includes(value.toLowerCase()),
+          formattedValues[n]?.toLowerCase()?.includes(value.toLowerCase()),
         )
       : values;
   }, [value, formattedValues]);
@@ -142,7 +139,7 @@ export default function FieldFilterEditForm({
           {allowFilterSelect && (
             <Dropdown
               className={styles.dropdown}
-              items={filters.filter(f => f.type === type)}
+              items={filterDropdownItems(name)}
               value={operator}
               renderValue={renderFilterValue}
               onChange={handleOperatorChange}
@@ -216,7 +213,7 @@ const ResultsMenu = ({ values, type, isLoading, onSelect }) => {
 
   return (
     <Menu className={styles.menu} variant="popup" onSelect={onSelect}>
-      {values?.map((value: any) => {
+      {values?.map(({ value }) => {
         return <Item key={value}>{formatValue(value, type)}</Item>;
       })}
     </Menu>

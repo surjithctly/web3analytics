@@ -1,8 +1,8 @@
-import { GridColumn, GridTable, Icon, Text, useBreakpoint } from 'react-basics';
-import { useMessages } from 'components/hooks';
-import Icons from 'components/icons';
-import { ROLES } from 'lib/constants';
-import LinkButton from 'components/common/LinkButton';
+import { GridColumn, GridTable, Icon, Text } from 'react-basics';
+import { useMessages } from '@/components/hooks';
+import Icons from '@/components/icons';
+import { ROLES } from '@/lib/constants';
+import LinkButton from '@/components/common/LinkButton';
 
 export function TeamsTable({
   data = [],
@@ -13,10 +13,9 @@ export function TeamsTable({
   showActions?: boolean;
 }) {
   const { formatMessage, labels } = useMessages();
-  const breakpoint = useBreakpoint();
 
   return (
-    <GridTable data={data} cardMode={['xs', 'sm', 'md'].includes(breakpoint)}>
+    <GridTable data={data}>
       <GridColumn name="name" label={formatMessage(labels.name)} />
       <GridColumn name="owner" label={formatMessage(labels.owner)}>
         {row => row.teamUser.find(({ role }) => role === ROLES.teamOwner)?.user?.username}

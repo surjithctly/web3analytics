@@ -1,19 +1,18 @@
 'use client';
 import { firstBy } from 'thenby';
-import { Grid, GridRow } from 'components/layout/Grid';
-import Page from 'components/layout/Page';
-import RealtimeChart from 'components/metrics/RealtimeChart';
-import WorldMap from 'components/metrics/WorldMap';
-import { useRealtime } from 'components/hooks';
+import { Grid, GridRow } from '@/components/layout/Grid';
+import Page from '@/components/layout/Page';
+import RealtimeChart from '@/components/metrics/RealtimeChart';
+import WorldMap from '@/components/metrics/WorldMap';
+import { useRealtime } from '@/components/hooks';
 import RealtimeLog from './RealtimeLog';
 import RealtimeHeader from './RealtimeHeader';
 import RealtimeUrls from './RealtimeUrls';
 import RealtimeCountries from './RealtimeCountries';
 import WebsiteHeader from '../WebsiteHeader';
-import WebsiteProvider from '../WebsiteProvider';
-import { percentFilter } from 'lib/filters';
+import { percentFilter } from '@/lib/filters';
 
-export function WebsiteRealtimePage({ websiteId }) {
+export function WebsiteRealtimePage({ websiteId }: { websiteId: string }) {
   const { data, isLoading, error } = useRealtime(websiteId);
 
   if (isLoading || error) {
@@ -27,7 +26,7 @@ export function WebsiteRealtimePage({ websiteId }) {
   );
 
   return (
-    <WebsiteProvider websiteId={websiteId}>
+    <>
       <WebsiteHeader websiteId={websiteId} />
       <RealtimeHeader data={data} />
       <RealtimeChart data={data} unit="minute" />
@@ -41,7 +40,7 @@ export function WebsiteRealtimePage({ websiteId }) {
           <WorldMap data={countries} />
         </GridRow>
       </Grid>
-    </WebsiteProvider>
+    </>
   );
 }
 
